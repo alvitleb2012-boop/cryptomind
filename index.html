@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoMind — Розумний Асистент</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080C10;
+    --surface: #0E1419;
+    --surface2: #141C24;
+    --border: #1E2D3D;
+    --accent: #00FF88;
+    --accent2: #00C4FF;
+    --accent3: #FF6B35;
+    --warn: #FFB800;
+    --danger: #FF4757;
+    --text: #E8F0F8;
+    --muted: #556677;
+    --glow: rgba(0,255,136,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid bg */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+
+  .app { position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:20px; }
+
+  /* HEADER */
+  header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 20px 0 30px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+  }
+  .logo {
+    display:flex; align-items:center; gap:12px;
+  }
+  .logo-icon {
+    width:44px; height:44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    box-shadow: 0 0 20px var(--glow);
+  }
+  .logo h1 { font-size:24px; font-weight:800; letter-spacing:-0.5px; }
+  .logo span { color:var(--accent); }
+
+  .header-status {
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Mono', monospace;
+    font-size:11px; color:var(--muted);
+  }
+  .pulse {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap:15px; margin-bottom:25px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding: 18px 20px;
+    position:relative; overflow:hidden;
+    transition: border-color 0.3s;
+  }
+  .stat-card:hover { border-color: var(--accent); }
+  .stat-card::after {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity:0.6;
+  }
+  .stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; font-family:'Space Mono',monospace; }
+  .stat-value { font-size:22px; font-weight:700; }
+  .stat-value.up { color:var(--accent); }
+  .stat-value.down { color:var(--danger); }
+  .stat-sub { font-size:11px; color:var(--muted); margin-top:4px; font-family:'Space Mono',monospace; }
+
+  /* MAIN GRID */
+  .main-grid {
+    display:grid;
+    grid-template-columns: 1fr 380px;
+    gap:20px;
+  }
+
+  /* TOP-10 TABLE */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .panel-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size:15px; font-weight:700; letter-spacing:0.5px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel-title .badge {
+    background: rgba(0,255,136,0.15);
+    color:var(--accent);
+    font-size:10px; font-weight:600;
+    padding:2px 8px; border-radius:20px;
+    font-family:'Space Mono',monospace;
+  }
+  .refresh-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding:6px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:12px;
+    font-family:'Space Mono',monospace;
+    transition: all 0.2s;
+    display:flex; align-items:center; gap:6px;
+  }
+  .refresh-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .refresh-btn.spinning .icon { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* TABLE */
+  .crypto-table { width:100%; }
+  .table-row {
+    display:grid;
+    grid-template-columns: 40px 1fr 120px 100px 100px 120px 90px;
+    align-items:center;
+    padding:14px 24px;
+    border-bottom:1px solid var(--border);
+    transition: background 0.2s;
+    cursor:pointer;
+  }
+  .table-row:hover { background: var(--surface2); }
+  .table-row:last-child { border-bottom:none; }
+  .table-header { opacity:0.5; font-size:10px; font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:1px; }
+  .table-header:hover { background:none; cursor:default; }
+
+  .rank { font-family:'Space Mono',monospace; font-size:12px; color:var(--muted); font-weight:700; }
+  .top3 .rank { color:var(--accent); }
+
+  .coin-info { display:flex; align-items:center; gap:10px; }
+  .coin-img { width:32px; height:32px; border-radius:50%; background:var(--border); }
+  .coin-name { font-weight:700; font-size:14px; }
+  .coin-sym { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; text-transform:uppercase; }
+
+  .price { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; }
+  .change { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px; text-align:center; }
+  .change.up { color:var(--accent); background:rgba(0,255,136,0.1); }
+  .change.down { color:var(--danger); background:rgba(255,71,87,0.1); }
+
+  .mcap { font-size:12px; color:var(--muted); font-family:'Space Mono',monospace; }
+
+  .score-bar { display:flex; align-items:center; gap:8px; }
+  .score-val { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:var(--accent); }
+  .bar { flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .bar-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:2px; transition:width 0.8s ease; }
+
+  .buy-btn {
+    background: rgba(0,255,136,0.1);
+    border:1px solid rgba(0,255,136,0.3);
+    color:var(--accent);
+    padding:5px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:11px;
+    font-weight:700;
+    font-family:'Space Mono',monospace;
+    transition:all 0.2s;
+  }
+  .buy-btn:hover { background:rgba(0,255,136,0.25); border-color:var(--accent); box-shadow:0 0 10px var(--glow); }
+
+  /* SIDEBAR */
+  .sidebar { display:flex; flex-direction:column; gap:15px; }
+
+  /* PORTFOLIO WIDGET */
+  .portfolio-card {
+    background: linear-gradient(135deg, #0a1628 0%, #0e1f3a 100%);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:24px;
+    position:relative; overflow:hidden;
+  }
+  .portfolio-card::before {
+    content:'';
+    position:absolute; top:-40px; right:-40px;
+    width:120px; height:120px;
+    background: radial-gradient(circle, rgba(0,196,255,0.15) 0%, transparent 70%);
+    border-radius:50%;
+  }
+  .portfolio-label { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .portfolio-total { font-size:36px; font-weight:800; margin-bottom:4px; }
+  .portfolio-total span { color:var(--accent2); }
+  .portfolio-sub { font-size:12px; color:var(--muted); margin-bottom:20px; }
+
+  /* Monthly plan */
+  .monthly-plan {
+    background: var(--surface2);
+    border-radius:14px;
+    padding:16px;
+    margin-top:8px;
+  }
+  .monthly-plan h4 { font-size:12px; color:var(--muted); font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+
+  .income-input-row { display:flex; gap:8px; margin-bottom:12px; }
+  .income-input {
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 12px;
+    border-radius:8px;
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    outline:none;
+    transition:border-color 0.2s;
+  }
+  .income-input:focus { border-color:var(--accent); }
+  .income-btn {
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;
+    color:#000;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+    font-size:12px;
+    font-family:'Space Mono',monospace;
+    transition:opacity 0.2s;
+  }
+  .income-btn:hover { opacity:0.85; }
+
+  .invest-result {
+    display:none;
+    gap:8px;
+    flex-direction:column;
+  }
+  .invest-result.show { display:flex; }
+  .invest-line {
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; font-family:'Space Mono',monospace;
+  }
+  .invest-line .il { color:var(--muted); }
+  .invest-line .iv { color:var(--accent); font-weight:700; }
+
+  /* DCA Plan */
+  .dca-card {
+    background: var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:20px;
+  }
+  .dca-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .dca-item {
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--surface2);
+    border-radius:10px;
+    padding:10px 14px;
+  }
+  .dca-coin { display:flex; align-items:center; gap:8px; }
+  .dca-coin img { width:22px; height:22px; border-radius:50%; }
+  .dca-coin span { font-size:12px; font-weight:700; }
+  .dca-amount { font-family:'Space Mono',monospace; font-size:12px; color:var(--accent); font-weight:700; }
+
+  /* AI ANALYSIS */
+  .ai-card {
+    background: var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:20px;
+    position:relative; overflow:hidden;
+  }
+  .ai-card::after {
+    content:'';
+    position:absolute; bottom:0; left:0; right:0; height:60px;
+    background: linear-gradient(to top, var(--surface), transparent);
+  }
+  .ai-text {
+    font-size:13px;
+    line-height:1.7;
+    color:var(--muted);
+    max-height:120px;
+    overflow:hidden;
+    position:relative;
+  }
+  .ai-text strong { color:var(--text); }
+  .ai-loading {
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Mono',monospace;
+    font-size:12px; color:var(--accent);
+  }
+  .dots span {
+    animation: blink 1.4s infinite;
+    display:inline-block;
+  }
+  .dots span:nth-child(2) { animation-delay:0.2s; }
+  .dots span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+
+  /* TOAST */
+  .toast {
+    position:fixed; bottom:30px; right:30px;
+    background: var(--surface);
+    border:1px solid var(--accent);
+    border-radius:12px;
+    padding:14px 20px;
+    font-size:13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--glow);
+    transform: translateY(100px);
+    opacity:0;
+    transition: all 0.3s;
+    z-index:100;
+    max-width:300px;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast-title { color:var(--accent); font-weight:700; margin-bottom:4px; }
+  .toast-body { color:var(--muted); font-size:12px; font-family:'Space Mono',monospace; }
+
+  /* LOADING STATE */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+    background-size:200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius:6px;
+    height:16px;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* FOOTER */
+  footer {
+    margin-top:30px;
+    padding:20px 0;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color:var(--muted);
+    font-family:'Space Mono',monospace;
+  }
+
+  /* RESPONSIVE */
+  @media(max-width:1100px) {
+    .main-grid { grid-template-columns:1fr; }
+    .stats-bar { grid-template-columns:repeat(2,1fr); }
+    .table-row { grid-template-columns:30px 1fr 100px 80px; }
+    .table-row > *:nth-child(5),
+    .table-row > *:nth-child(6) { display:none; }
+  }
+  @media(max-width:600px) {
+    .stats-bar { grid-template-columns:1fr 1fr; }
+    .table-row { grid-template-columns:24px 1fr 90px 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">₿</div>
+      <div>
+        <h1>Crypto<span>Mind</span></h1>
+        <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;">Розумний Крипто Асистент</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="pulse"></div>
+      <span id="statusText">Завантаження ринку...</span>
+    </div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">🌍 Крипто Ринок</div>
+      <div class="stat-value" id="totalMcap">—</div>
+      <div class="stat-sub" id="mcapChange">Загальна капіталізація</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📊 Обсяг 24г</div>
+      <div class="stat-value up" id="totalVolume">—</div>
+      <div class="stat-sub">Торговий обсяг</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">👑 BTC Домінація</div>
+      <div class="stat-value" id="btcDom" style="color:var(--warn)">—</div>
+      <div class="stat-sub">Частка ринку</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">😨 Індекс Страху</div>
+      <div class="stat-value" id="fearIndex">—</div>
+      <div class="stat-sub" id="fearLabel">Sentiment ринку</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+    <!-- LEFT: TABLE -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            🔥 Топ-10 Криптовалют
+            <span class="badge" id="updateTime">—</span>
+          </div>
+          <button class="refresh-btn" onclick="loadAll()" id="refreshBtn">
+            <span class="icon">↻</span> Оновити
+          </button>
+        </div>
+        <div id="cryptoTable">
+          <div class="table-row table-header">
+            <div>#</div>
+            <div>Монета</div>
+            <div>Ціна (USD)</div>
+            <div>24г %</div>
+            <div>7д %</div>
+            <div>Оцінка AI</div>
+            <div>Дія</div>
+          </div>
+          <div id="tableBody">
+            <!-- skeleton rows -->
+            ${Array(10).fill(0).map((_,i)=>`
+            <div class="table-row" style="gap:10px">
+              <div class="skeleton" style="width:20px;height:14px"></div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="skeleton" style="width:32px;height:32px;border-radius:50%;flex-shrink:0"></div>
+                <div><div class="skeleton" style="width:80px;margin-bottom:4px"></div><div class="skeleton" style="width:40px;height:10px"></div></div>
+              </div>
+              <div class="skeleton" style="width:80px;height:14px"></div>
+              <div class="skeleton" style="width:60px;height:22px;border-radius:6px"></div>
+              <div class="skeleton" style="width:60px;height:22px;border-radius:6px"></div>
+              <div class="skeleton" style="width:100px;height:14px"></div>
+              <div class="skeleton" style="width:55px;height:28px;border-radius:8px"></div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <!-- Portfolio -->
+      <div class="portfolio-card">
+        <div class="portfolio-label">💼 Мій Портфель</div>
+        <div class="portfolio-total"><span id="portfolioTotal">$0.00</span></div>
+        <div class="portfolio-sub" id="portfolioSub">Додайте монети, щоб відстежувати</div>
+
+        <div class="monthly-plan">
+          <h4>📅 DCA — 1% від доходу</h4>
+          <div class="income-input-row">
+            <input class="income-input" type="number" id="incomeInput" placeholder="Ваш дохід ($)" min="0">
+            <button class="income-btn" onclick="calcDCA()">▶</button>
+          </div>
+          <div class="invest-result" id="investResult">
+            <div class="invest-line">
+              <span class="il">Щомісячна інвестиція:</span>
+              <span class="iv" id="ir_monthly">—</span>
+            </div>
+            <div class="invest-line">
+              <span class="il">Щотижневий внесок:</span>
+              <span class="iv" id="ir_weekly">—</span>
+            </div>
+            <div class="invest-line">
+              <span class="il">Щоденний внесок:</span>
+              <span class="iv" id="ir_daily">—</span>
+            </div>
+            <div class="invest-line">
+              <span class="il">За 1 рік (без росту):</span>
+              <span class="iv" id="ir_yearly">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DCA Distribution -->
+      <div class="dca-card">
+        <div class="panel-title">📊 Розподіл DCA <span class="badge">Авто</span></div>
+        <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:4px;">Пропорції на основі AI-оцінки</div>
+        <div class="dca-list" id="dcaList">
+          <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;font-family:'Space Mono',monospace;">
+            Введіть дохід вище ↑
+          </div>
+        </div>
+      </div>
+
+      <!-- BINANCE INTEGRATION -->
+      <div class="dca-card" id="binancePanel">
+        <div class="panel-title" style="margin-bottom:4px;">🟡 Binance Автоторгівля <span class="badge" id="binanceBadge">Вимкнено</span></div>
+        <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:12px;">Тільки права на <strong style="color:var(--warn)">торгівлю</strong> — зняття НЕ потрібне</div>
+
+        <div id="bnKeyRow">
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+            <input id="bnApiKey" class="income-input" type="password" placeholder="API Key (з Binance)" style="font-size:11px;">
+            <input id="bnSecretKey" class="income-input" type="password" placeholder="Secret Key (з Binance)" style="font-size:11px;">
+          </div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:8px;">
+            ⚙️ Binance → Профіль → API Management → Create API<br>
+            ✅ Дозволити: <strong style="color:var(--accent)">Enable Spot Trading</strong><br>
+            ❌ НЕ дозволяти: Withdrawals, Futures
+          </div>
+          <button class="income-btn" onclick="saveBinanceKeys()" style="width:100%;margin-bottom:8px;">🔐 Зберегти ключі</button>
+        </div>
+
+        <div id="bnActiveRow" style="display:none;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:11px;color:var(--accent);font-family:'Space Mono',monospace;">✅ Binance підключено</span>
+            <button onclick="clearBinanceKeys()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:'Space Mono',monospace;">✕ Відключити</button>
+          </div>
+
+          <!-- Баланс -->
+          <div style="background:var(--surface);border-radius:10px;padding:12px;">
+            <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:4px;">USDT БАЛАНС</div>
+            <div style="font-size:20px;font-weight:700;color:var(--warn)" id="bnBalance">—</div>
+            <button onclick="fetchBinanceBalance()" style="background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;font-family:'Space Mono',monospace;margin-top:4px;">↻ Оновити</button>
+          </div>
+
+          <!-- DCA авто -->
+          <div style="background:var(--surface);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:700;margin-bottom:8px;">📅 DCA — Автозапуск</div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <input id="bnDcaAmount" class="income-input" type="number" placeholder="Сума USDT/місяць" style="font-size:11px;">
+            </div>
+            <select id="bnDcaDay" class="income-input" style="font-size:11px;margin-bottom:8px;cursor:pointer;">
+              <option value="1">1-го числа</option>
+              <option value="15">15-го числа</option>
+              <option value="last">Останнього числа</option>
+            </select>
+            <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:8px;" id="bnDcaNext">Наступна покупка: —</div>
+            <button class="income-btn" onclick="enableDCA()" id="bnDcaBtn" style="width:100%;font-size:11px;">▶ Увімкнути DCA</button>
+          </div>
+
+          <!-- Сигнальна покупка -->
+          <div style="background:var(--surface);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:700;margin-bottom:8px;">🤖 AI Сигнал — Автокупівля</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:6px;">Купує коли AI-оцінка монети ≥ порогу</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:11px;color:var(--muted);">Поріг оцінки:</span>
+              <input id="bnSignalScore" class="income-input" type="number" value="75" min="60" max="99" style="font-size:11px;width:60px;">
+              <span style="font-size:11px;color:var(--muted);">/99</span>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+              <input id="bnSignalAmount" class="income-input" type="number" placeholder="USDT на сигнал" style="font-size:11px;">
+            </div>
+            <button class="income-btn" onclick="toggleSignalBuy()" id="bnSignalBtn" style="width:100%;font-size:11px;background:linear-gradient(135deg,#ff6b35,#ff4757);">▶ Увімкнути сигнали</button>
+          </div>
+
+          <!-- Лог операцій -->
+          <div style="background:var(--surface);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:700;margin-bottom:8px;">📋 Лог операцій</div>
+            <div id="bnLog" style="font-size:10px;font-family:'Space Mono',monospace;color:var(--muted);max-height:100px;overflow-y:auto;line-height:1.6;">
+              Операцій ще немає...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Analysis -->
+      <div class="ai-card">
+        <div class="panel-title" style="margin-bottom:12px;">🤖 AI Аналіз <span class="badge">Groq Free</span></div>
+        <div id="groqKeyRow" style="display:flex;gap:8px;margin-bottom:10px;">
+          <input id="groqKeyInput" class="income-input" type="password" placeholder="Groq API ключ..." style="font-size:11px;">
+          <button class="income-btn" onclick="saveGroqKey()" style="white-space:nowrap;font-size:11px;padding:8px 10px;">OK</button>
+        </div>
+        <div id="groqKeySet" style="display:none;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span style="font-size:11px;color:var(--accent);font-family:Space Mono,monospace;">✅ Groq активний</span>
+          <button onclick="clearGroqKey()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:Space Mono,monospace;">✕ Видалити</button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);font-family:Space Mono,monospace;margin-bottom:10px;">
+          Безкоштовно: <a href="https://console.groq.com" target="_blank" style="color:var(--accent2);text-decoration:none;">console.groq.com</a>
+        </div>
+        <div id="aiAnalysis" class="ai-text">
+          <div class="ai-loading">
+            Аналізую ринок<div class="dots"><span>.</span><span>.</span><span>.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>⚠️ Не є фінансовою порадою. Інвестуйте відповідально.</span>
+    <span id="footerTime">—</span>
+  </footer>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle">✅ Додано!</div>
+  <div class="toast-body" id="toastBody">Монету додано до портфеля</div>
+</div>
+
+<script>
+let cryptoData = [];
+let portfolio = JSON.parse(localStorage.getItem('cm_portfolio') || '{}');
+let scores = {};
+
+// === STABLECOIN DETECTION ===
+const STABLECOINS = new Set(['usdt','usdc','busd','dai','tusd','usdp','usdd','frax','lusd','gusd','fdusd','pyusd','susd','usde']);
+function isStablecoin(coin) {
+  return STABLECOINS.has(coin.symbol.toLowerCase()) ||
+    Math.abs(coin.current_price - 1) < 0.05; // ціна близька до $1
+}
+
+// === SCORE CALCULATION ===
+function calcScore(coin) {
+  // Стейблкоїни отримують мінімальну оцінку — не рекомендуємо до покупки
+  if (isStablecoin(coin)) return 1;
+
+  let s = 50;
+  const p1d = coin.price_change_percentage_24h || 0;
+  const p7d = coin.price_change_percentage_7d_in_currency || 0;
+  const p30d = coin.price_change_percentage_30d_in_currency || 0;
+  const rank = coin.market_cap_rank || 50;
+
+  // Momentum 24г
+  if (p1d > 5) s += 10; else if (p1d > 2) s += 5;
+  else if (p1d < -5) s -= 10; else if (p1d < -2) s -= 5;
+
+  // Momentum 7д (важливіший сигнал)
+  if (p7d > 15) s += 14; else if (p7d > 5) s += 7;
+  else if (p7d < -15) s -= 14; else if (p7d < -5) s -= 7;
+
+  // Momentum 30д (тренд)
+  if (p30d > 30) s += 10; else if (p30d > 10) s += 5;
+  else if (p30d < -30) s -= 10; else if (p30d < -10) s -= 5;
+
+  // Rank bonus (топові монети надійніші)
+  if (rank === 1) s += 18;
+  else if (rank === 2) s += 14;
+  else if (rank === 3) s += 10;
+  else if (rank <= 10) s += 6;
+  else if (rank <= 20) s += 2;
+
+  // Volume/Mcap — активність торгів
+  const ratio = (coin.total_volume || 0) / (coin.market_cap || 1);
+  if (ratio > 0.25) s += 6; else if (ratio > 0.1) s += 3;
+
+  return Math.min(99, Math.max(2, Math.round(s)));
+}
+
+// === FORMAT ===
+function fmt(n) {
+  if (n >= 1e12) return '$' + (n/1e12).toFixed(2) + 'T';
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  return '$' + n.toFixed(2);
+}
+function fmtPrice(n) {
+  if (n >= 1000) return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+  if (n >= 1) return '$' + n.toFixed(2);
+  if (n >= 0.01) return '$' + n.toFixed(4);
+  return '$' + n.toFixed(6);
+}
+function pct(n) {
+  if (!n) return '0.00%';
+  const s = n >= 0 ? '+' : '';
+  return s + n.toFixed(2) + '%';
+}
+
+// === FETCH DATA ===
+const PROXY = 'https://snowy-tree-e961.alvitleb2012.workers.dev';
+
+async function fetchMarket() {
+  const r = await fetch(PROXY + '/coingecko/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h,7d,30d');
+  if (!r.ok) throw new Error('API error');
+  return r.json();
+}
+async function fetchGlobal() {
+  const r = await fetch(PROXY + '/coingecko/global');
+  if (!r.ok) throw new Error('API error');
+  return r.json();
+}
+async function fetchFear() {
+  const r = await fetch(PROXY + '/fear/');
+  if (!r.ok) throw new Error();
+  return r.json();
+}
+
+// === RENDER TABLE ===
+function renderTable(coins) {
+  const body = document.getElementById('tableBody');
+
+  // Спочатку рахуємо всі scores
+  scores = {};
+  coins.forEach(c => { scores[c.id] = calcScore(c); });
+
+  // Додатковий захист: примусово обнуляємо стейблкоїни
+  coins.forEach(c => { if (isStablecoin(c)) scores[c.id] = 1; });
+
+  body.innerHTML = coins.map((c, i) => {
+    const rank = i + 1;
+    const sc = scores[c.id];
+    const stable = isStablecoin(c);
+    const p24 = c.price_change_percentage_24h;
+    const p7 = c.price_change_percentage_7d_in_currency;
+    const upClass = v => v >= 0 ? 'up' : 'down';
+    return `
+    <div class="table-row ${rank<=3&&!stable?'top3':''}" onclick="showCoinDetail('${c.id}')" style="${stable?'opacity:0.55':''}">
+      <div class="rank">${rank<=3&&!stable?['🥇','🥈','🥉'][rank-1]:rank}</div>
+      <div class="coin-info">
+        <img class="coin-img" src="${c.image}" alt="${c.name}" loading="lazy">
+        <div>
+          <div class="coin-name">${c.name}${stable?' <span style="font-size:9px;color:var(--muted);background:var(--border);padding:1px 5px;border-radius:4px;font-family:Space Mono,monospace;">STABLE</span>':''}</div>
+          <div class="coin-sym">${c.symbol.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="price">${fmtPrice(c.current_price)}</div>
+      <div class="change ${upClass(p24)}">${pct(p24)}</div>
+      <div class="change ${upClass(p7)}">${pct(p7)}</div>
+      <div class="score-bar">
+        <span class="score-val">${sc}</span>
+        <div class="bar"><div class="bar-fill" style="width:${sc}%"></div></div>
+      </div>
+      <button class="buy-btn" onclick="event.stopPropagation();addToPortfolio('${c.id}','${c.symbol.toUpperCase()}','${c.name}',${c.current_price})">+ Купити</button>
+    </div>`;
+  }).join('');
+}
+
+// === RENDER GLOBAL ===
+function renderGlobal(data) {
+  const d = data.data;
+  const mc = d.total_market_cap.usd;
+  const vol = d.total_volume.usd;
+  const btc = d.market_cap_percentage.btc;
+  const chg = d.market_cap_change_percentage_24h_usd;
+
+  document.getElementById('totalMcap').textContent = fmt(mc);
+  document.getElementById('totalMcap').className = 'stat-value ' + (chg>=0?'up':'down');
+  document.getElementById('mcapChange').textContent = (chg>=0?'▲':'▼') + Math.abs(chg).toFixed(2) + '% за 24г';
+  document.getElementById('totalVolume').textContent = fmt(vol);
+  document.getElementById('btcDom').textContent = btc.toFixed(1) + '%';
+}
+
+// === RENDER FEAR ===
+function renderFear(data) {
+  const f = data.data[0];
+  const val = parseInt(f.value);
+  const labels = { 'Extreme Fear':'😱 Крайній страх', 'Fear':'😨 Страх', 'Neutral':'😐 Нейтральний', 'Greed':'😏 Жадібність', 'Extreme Greed':'🤑 Крайня жадібність' };
+  document.getElementById('fearIndex').textContent = val;
+  document.getElementById('fearIndex').className = 'stat-value ' + (val<40?'down':val>60?'up':'');
+  document.getElementById('fearLabel').textContent = labels[f.value_classification] || f.value_classification;
+}
+
+// === PORTFOLIO ===
+function addToPortfolio(id, sym, name, price) {
+  if (!portfolio[id]) portfolio[id] = { sym, name, price, qty: 0 };
+  portfolio[id].qty += 0.001; // tiny DCA unit
+  portfolio[id].price = price;
+  localStorage.setItem('cm_portfolio', JSON.stringify(portfolio));
+  updatePortfolioUI();
+  showToast(`✅ ${sym} додано!`, `Ціна входу: ${fmtPrice(price)}`);
+}
+function updatePortfolioUI() {
+  const coins = Object.values(portfolio);
+  if (!coins.length) return;
+  const total = coins.reduce((s,c) => s + c.qty * c.price, 0);
+  document.getElementById('portfolioTotal').textContent = '$' + total.toFixed(2);
+  document.getElementById('portfolioSub').textContent = `${coins.length} монет(и) у портфелі`;
+}
+
+// === DCA CALC ===
+function calcDCA() {
+  const income = parseFloat(document.getElementById('incomeInput').value);
+  if (!income || income <= 0) return;
+  const monthly = income * 0.01;
+  const weekly = monthly / 4.33;
+  const daily = monthly / 30;
+  const yearly = monthly * 12;
+
+  document.getElementById('ir_monthly').textContent = '$' + monthly.toFixed(2);
+  document.getElementById('ir_weekly').textContent = '$' + weekly.toFixed(2);
+  document.getElementById('ir_daily').textContent = '$' + daily.toFixed(2);
+  document.getElementById('ir_yearly').textContent = '$' + yearly.toFixed(2);
+  document.getElementById('investResult').classList.add('show');
+
+  renderDCAList(monthly);
+}
+
+function renderDCAList(monthly) {
+  if (!cryptoData.length) return;
+
+  // Фільтруємо стейблкоїни двома способами для надійності
+  const top5 = [...cryptoData]
+    .filter(c => !isStablecoin(c) && (scores[c.id] || 0) > 1)
+    .sort((a,b) => (scores[b.id] || 0) - (scores[a.id] || 0))
+    .slice(0, 5);
+
+  if (!top5.length) {
+    document.getElementById('dcaList').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;">Завантаження даних...</div>';
+    return;
+  }
+
+  const totalScore = top5.reduce((s,c) => s + (scores[c.id] || 50), 0);
+
+  document.getElementById('dcaList').innerHTML = top5.map(c => {
+    const sc = scores[c.id] || 50;
+    const alloc = (sc / totalScore * monthly).toFixed(2);
+    const qty = (alloc / c.current_price).toFixed(6);
+    return `
+    <div class="dca-item">
+      <div class="dca-coin">
+        <img src="${c.image}" alt="${c.name}" onerror="this.style.display='none'">
+        <span>${c.symbol.toUpperCase()}</span>
+        <span style="color:var(--muted);font-size:10px;font-family:'Space Mono',monospace;">${sc}pts</span>
+      </div>
+      <div>
+        <div class="dca-amount">$${alloc}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;text-align:right">≈${qty}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// === AI ANALYSIS via Groq API (FREE) ===
+async function runAIAnalysis(coins) {
+  const el = document.getElementById('aiAnalysis');
+  const key = localStorage.getItem('groq_key') || '';
+
+  if (!key) {
+    el.innerHTML = generateLocalAnalysis(coins);
+    return;
+  }
+
+  el.innerHTML = `<div class="ai-loading">🤖 Аналізую<div class="dots"><span>.</span><span>.</span><span>.</span></div></div>`;
+
+  const realCoins = coins.filter(c => !isStablecoin(c) && (scores[c.id] || 0) > 1);
+  const summary = realCoins.map((c,i) =>
+    `${i+1}. ${c.name} (${c.symbol.toUpperCase()}): $${c.current_price.toFixed(2)}, 24г: ${pct(c.price_change_percentage_24h)}, 7д: ${pct(c.price_change_percentage_7d_in_currency)}, AI-оцінка: ${scores[c.id]||'N/A'}/99`
+  ).join('\n');
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        max_tokens: 350,
+        messages: [
+          { role: 'system', content: 'Ти — досвідчений крипто-аналітик. Відповідай ТІЛЬКИ українською мовою. Стейблкоїни (USDT, USDC тощо) НЕ рекомендуй. Пиши коротко, конкретно, без зайвих слів і без markdown форматування.' },
+          { role: 'user', content: `Поточний стан криптовалют (стейблкоїни вже виключені):\n\n${summary}\n\nДай коротку аналітичну пораду (3-4 речення): яку 1-2 монети зараз найкраще купляти через DCA стратегію і чому? Враховуй momentum (7д важливіший за 24г) та AI-оцінку.` }
+        ]
+      })
+    });
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || generateLocalAnalysis(coins);
+    el.innerHTML = text;
+  } catch(e) {
+    el.innerHTML = generateLocalAnalysis(coins);
+  }
+}
+
+function saveGroqKey() {
+  const k = document.getElementById('groqKeyInput').value.trim();
+  if (!k) return;
+  localStorage.setItem('groq_key', k);
+  document.getElementById('groqKeyRow').style.display = 'none';
+  document.getElementById('groqKeySet').style.display = 'flex';
+  showToast('✅ Groq ключ збережено!', 'AI аналіз активовано');
+  if (cryptoData.length) runAIAnalysis(cryptoData);
+}
+function clearGroqKey() {
+  localStorage.removeItem('groq_key');
+  document.getElementById('groqKeyRow').style.display = 'flex';
+  document.getElementById('groqKeySet').style.display = 'none';
+  if (cryptoData.length) runAIAnalysis(cryptoData);
+}
+
+function generateLocalAnalysis(coins) {
+  const realCoins = coins.filter(c => !isStablecoin(c) && (scores[c.id] || 0) > 1);
+  if (!realCoins.length) return 'Завантаження даних...';
+  const sorted = [...realCoins].sort((a,b) => (scores[b.id]||0) - (scores[a.id]||0));
+  const best = sorted[0];
+  const second = sorted[1];
+  const worst = sorted[sorted.length - 1];
+  return `<strong>📈 Топ вибір для DCA:</strong> <strong style="color:var(--accent)">${best.name}</strong> — оцінка ${scores[best.id]}/99, зміна за 7д: ${pct(best.price_change_percentage_7d_in_currency)}${second ? `. Також розгляньте <strong style="color:var(--accent2)">${second.name}</strong> (${scores[second.id]}/99)` : ''}. <strong>⚠️ Обережно:</strong> ${worst.name} показує слабку динаміку. Стейблкоїни автоматично виключені.`;
+}
+
+// === TOAST ===
+function showToast(title, body) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastBody').textContent = body;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// === COIN DETAIL ===
+function showCoinDetail(id) {
+  const c = cryptoData.find(x => x.id === id);
+  if (!c) return;
+  showToast(`📊 ${c.name}`, `AI оцінка: ${scores[id]}/99 | 7д: ${pct(c.price_change_percentage_7d_in_currency)}`);
+}
+
+// === UPDATE TIME ===
+function updateTime() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('uk-UA');
+  document.getElementById('updateTime').textContent = t;
+  document.getElementById('footerTime').textContent = 'Оновлено: ' + t;
+  document.getElementById('statusText').textContent = 'Ринок онлайн · ' + t;
+}
+
+// === MAIN LOAD ===
+async function loadAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  try {
+    const [coins, global, fear] = await Promise.allSettled([fetchMarket(), fetchGlobal(), fetchFear()]);
+
+    if (coins.status === 'fulfilled') {
+      cryptoData = coins.value;
+      renderTable(cryptoData);
+      await runAIAnalysis(cryptoData);
+
+      // Re-render DCA if income set
+      const income = parseFloat(document.getElementById('incomeInput').value);
+      if (income > 0) renderDCAList(income * 0.01);
+    }
+    if (global.status === 'fulfilled') renderGlobal(global.value);
+    if (fear.status === 'fulfilled') renderFear(fear.value);
+
+    updateTime();
+  } catch(e) {
+    document.getElementById('statusText').textContent = 'Помилка. Повторна спроба...';
+  }
+
+  btn.classList.remove('spinning');
+}
+
+// ============================================================
+// === BINANCE INTEGRATION ===
+// ============================================================
+const BN_PROXY = 'https://snowy-tree-e961.alvitleb2012.workers.dev/binance';
+let dcaTimer = null;
+let signalActive = false;
+let signalInterval = null;
+
+// Підпис HMAC-SHA256 через SubtleCrypto (вбудований у браузер)
+async function hmacSHA256(secret, message) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function bnRequest(path, params={}, method='GET') {
+  const apiKey = localStorage.getItem('bn_api') || '';
+  const secret = localStorage.getItem('bn_sec') || '';
+  if (!apiKey || !secret) throw new Error('Ключі не налаштовані');
+
+  params.timestamp = Date.now();
+  params.recvWindow = 10000;
+  const query = Object.entries(params).map(([k,v])=>`${k}=${v}`).join('&');
+  const signature = await hmacSHA256(secret, query);
+  const url = `${BN_PROXY}${path}?${query}&signature=${signature}`;
+
+  const res = await fetch(url, {
+    method,
+    headers: { 'X-MBX-APIKEY': apiKey }
+  });
+  const data = await res.json();
+  if (data.code && data.code < 0) throw new Error(data.msg || 'Binance API error');
+  return data;
+}
+
+// Збереження ключів
+function saveBinanceKeys() {
+  const api = document.getElementById('bnApiKey').value.trim();
+  const sec = document.getElementById('bnSecretKey').value.trim();
+  if (!api || !sec) { showToast('⚠️ Помилка', 'Введіть обидва ключі'); return; }
+  localStorage.setItem('bn_api', api);
+  localStorage.setItem('bn_sec', sec);
+  document.getElementById('bnKeyRow').style.display = 'none';
+  document.getElementById('bnActiveRow').style.display = 'flex';
+  document.getElementById('binanceBadge').textContent = 'Активно';
+  document.getElementById('binanceBadge').style.background = 'rgba(0,255,136,0.2)';
+  document.getElementById('binanceBadge').style.color = 'var(--accent)';
+  showToast('✅ Binance підключено!', 'Перевіряю баланс...');
+  fetchBinanceBalance();
+}
+
+function clearBinanceKeys() {
+  localStorage.removeItem('bn_api');
+  localStorage.removeItem('bn_sec');
+  document.getElementById('bnKeyRow').style.display = 'block';
+  document.getElementById('bnActiveRow').style.display = 'none';
+  document.getElementById('binanceBadge').textContent = 'Вимкнено';
+  document.getElementById('binanceBadge').style.background = '';
+  document.getElementById('binanceBadge').style.color = '';
+  if (signalInterval) { clearInterval(signalInterval); signalInterval = null; }
+  if (dcaTimer) { clearTimeout(dcaTimer); dcaTimer = null; }
+}
+
+// Отримати баланс USDT
+async function fetchBinanceBalance() {
+  try {
+    const data = await bnRequest('/api/v3/account');
+    const usdt = data.balances?.find(b => b.asset === 'USDT');
+    const bal = parseFloat(usdt?.free || 0).toFixed(2);
+    document.getElementById('bnBalance').textContent = '$' + bal;
+    addLog(`💰 Баланс USDT: $${bal}`);
+  } catch(e) {
+    document.getElementById('bnBalance').textContent = 'Помилка';
+    addLog(`❌ Помилка балансу: ${e.message}`);
+    showToast('❌ Binance помилка', e.message);
+  }
+}
+
+// Розмістити маркет-ордер
+async function placeBuyOrder(symbol, usdtAmount) {
+  try {
+    // Отримуємо ціну
+    const ticker = await fetch(`${BN_PROXY}/api/v3/ticker/price?symbol=${symbol}USDT`).then(r=>r.json());
+    const price = parseFloat(ticker.price);
+
+    // Отримуємо stepSize для кількості
+    const info = await fetch(`${BN_PROXY}/api/v3/exchangeInfo?symbol=${symbol}USDT`).then(r=>r.json());
+    const lotFilter = info.symbols?.[0]?.filters?.find(f=>f.filterType==='LOT_SIZE');
+    const stepSize = parseFloat(lotFilter?.stepSize || '0.001');
+    const decimals = stepSize.toString().split('.')[1]?.length || 3;
+
+    let qty = usdtAmount / price;
+    qty = Math.floor(qty / stepSize) * stepSize;
+    qty = parseFloat(qty.toFixed(decimals));
+
+    if (qty <= 0) throw new Error('Сума занадто мала');
+
+    const order = await bnRequest('/api/v3/order', {
+      symbol: `${symbol}USDT`,
+      side: 'BUY',
+      type: 'MARKET',
+      quantity: qty
+    }, 'POST');
+
+    const filled = parseFloat(order.executedQty || qty).toFixed(decimals);
+    const spent = parseFloat(order.cummulativeQuoteQty || usdtAmount).toFixed(2);
+    addLog(`✅ Куплено ${filled} ${symbol} за $${spent}`);
+    showToast(`✅ Куплено ${symbol}!`, `${filled} ${symbol} за $${spent}`);
+    fetchBinanceBalance();
+    return true;
+  } catch(e) {
+    addLog(`❌ Помилка покупки ${symbol}: ${e.message}`);
+    showToast(`❌ Помилка`, e.message);
+    return false;
+  }
+}
+
+// DCA — розподілена покупка за розкладом
+async function runDCA() {
+  const amount = parseFloat(document.getElementById('bnDcaAmount').value);
+  if (!amount || amount < 10) { showToast('⚠️ DCA', 'Мінімум $10'); return; }
+  if (!cryptoData.length) { showToast('⚠️ DCA', 'Дані ринку не завантажені'); return; }
+
+  addLog(`🚀 Запуск DCA на $${amount}...`);
+  showToast('🚀 DCA запущено!', `Розподіляю $${amount} між топ монетами`);
+
+  // Топ-5 без стейблкоїнів
+  const top5 = [...cryptoData]
+    .filter(c => !isStablecoin(c) && (scores[c.id]||0) > 1)
+    .sort((a,b) => (scores[b.id]||0) - (scores[a.id]||0))
+    .slice(0, 5);
+
+  const totalScore = top5.reduce((s,c) => s + (scores[c.id]||50), 0);
+
+  for (const coin of top5) {
+    const alloc = (scores[coin.id] / totalScore) * amount;
+    if (alloc < 5) continue; // Binance мінімум ~$5
+    const sym = coin.symbol.toUpperCase();
+    await placeBuyOrder(sym, alloc);
+    await new Promise(r => setTimeout(r, 500)); // пауза між ордерами
+  }
+
+  addLog(`✅ DCA завершено`);
+}
+
+// Увімкнути DCA за розкладом
+function enableDCA() {
+  const amount = parseFloat(document.getElementById('bnDcaAmount').value);
+  if (!amount || amount < 10) { showToast('⚠️ DCA', 'Введіть суму (мін. $10)'); return; }
+
+  const dayVal = document.getElementById('bnDcaDay').value;
+  const btn = document.getElementById('bnDcaBtn');
+
+  if (dcaTimer) {
+    clearTimeout(dcaTimer);
+    dcaTimer = null;
+    btn.textContent = '▶ Увімкнути DCA';
+    btn.style.background = '';
+    document.getElementById('bnDcaNext').textContent = 'Наступна покупка: —';
+    addLog('⏹ DCA вимкнено');
+    return;
+  }
+
+  // Розрахунок наступної дати
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(10, 0, 0, 0);
+
+  if (dayVal === 'last') {
+    next.setMonth(next.getMonth() + 1, 0);
+  } else {
+    next.setDate(parseInt(dayVal));
+    if (next <= now) next.setMonth(next.getMonth() + 1);
+  }
+
+  const msUntil = next - now;
+  document.getElementById('bnDcaNext').textContent = `Наступна: ${next.toLocaleDateString('uk-UA')} о 10:00`;
+  btn.textContent = '⏹ Вимкнути DCA';
+  btn.style.background = 'linear-gradient(135deg,#ff6b35,#ff4757)';
+  addLog(`📅 DCA заплановано на ${next.toLocaleDateString('uk-UA')}`);
+  showToast('📅 DCA заплановано!', `Покупка ${next.toLocaleDateString('uk-UA')} о 10:00`);
+
+  dcaTimer = setTimeout(async () => {
+    await runDCA();
+    dcaTimer = null;
+    // Перезапуск через місяць
+    setTimeout(() => enableDCA(), 100);
+  }, msUntil);
+}
+
+// Сигнальна автокупівля при високій AI-оцінці
+function toggleSignalBuy() {
+  const btn = document.getElementById('bnSignalBtn');
+  const amount = parseFloat(document.getElementById('bnSignalAmount').value);
+  const threshold = parseInt(document.getElementById('bnSignalScore').value) || 75;
+
+  if (signalActive) {
+    signalActive = false;
+    clearInterval(signalInterval);
+    signalInterval = null;
+    btn.textContent = '▶ Увімкнути сигнали';
+    btn.style.background = 'linear-gradient(135deg,#ff6b35,#ff4757)';
+    addLog('⏹ Сигнальна купівля вимкнена');
+    return;
+  }
+
+  if (!amount || amount < 5) { showToast('⚠️ Сигнал', 'Введіть суму (мін. $5)'); return; }
+
+  signalActive = true;
+  btn.textContent = `⏹ Сигнали активні (≥${threshold}pts)`;
+  btn.style.background = 'linear-gradient(135deg,var(--accent),var(--accent2))';
+  btn.style.color = '#000';
+  addLog(`🤖 Сигнальна купівля активна: поріг ${threshold}/99, сума $${amount}`);
+  showToast('🤖 Сигнали активні!', `Куплю при оцінці ≥${threshold}/99`);
+
+  const alreadyBought = new Set();
+
+  signalInterval = setInterval(async () => {
+    if (!cryptoData.length) return;
+    const candidates = cryptoData.filter(c =>
+      !isStablecoin(c) &&
+      (scores[c.id]||0) >= threshold &&
+      !alreadyBought.has(c.id)
+    );
+    for (const coin of candidates) {
+      addLog(`🔔 Сигнал! ${coin.name} = ${scores[coin.id]}/99`);
+      const ok = await placeBuyOrder(coin.symbol.toUpperCase(), amount);
+      if (ok) {
+        alreadyBought.add(coin.id);
+        // Скидаємо через 24г щоб не купляти знову
+        setTimeout(() => alreadyBought.delete(coin.id), 86400000);
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }, 60000); // Перевірка кожну хвилину
+}
+
+// Лог
+function addLog(msg) {
+  const log = document.getElementById('bnLog');
+  if (!log) return;
+  const time = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit',minute:'2-digit'});
+  const line = document.createElement('div');
+  line.textContent = `[${time}] ${msg}`;
+  if (log.firstChild?.textContent === 'Операцій ще немає...') log.innerHTML = '';
+  log.insertBefore(line, log.firstChild);
+  if (log.children.length > 20) log.removeChild(log.lastChild);
+}
+
+// === INIT ===
+// Restore Groq key state
+if (localStorage.getItem('groq_key')) {
+  document.getElementById('groqKeyRow').style.display = 'none';
+  document.getElementById('groqKeySet').style.display = 'flex';
+}
+// Restore Binance state
+if (localStorage.getItem('bn_api') && localStorage.getItem('bn_sec')) {
+  document.getElementById('bnKeyRow').style.display = 'none';
+  document.getElementById('bnActiveRow').style.display = 'flex';
+  document.getElementById('binanceBadge').textContent = 'Активно';
+  document.getElementById('binanceBadge').style.background = 'rgba(0,255,136,0.2)';
+  document.getElementById('binanceBadge').style.color = 'var(--accent)';
+  setTimeout(fetchBinanceBalance, 2000);
+}
+updatePortfolioUI();
+loadAll();
+setInterval(loadAll, 60000); // Auto-refresh every 60s
+setInterval(updateTime, 1000);
+</script>
+</body>
+</html>
